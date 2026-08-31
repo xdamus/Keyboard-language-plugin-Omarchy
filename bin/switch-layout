@@ -1,0 +1,39 @@
+#!/bin/bash
+# Switch keyboard layout using setxkbmap
+
+set -euo pipefail
+
+LAYOUT="${1:-}"
+
+# Validate input
+if [ -z "$LAYOUT" ]; then
+    echo "Error: No layout specified" >&2
+    echo "Usage: switch-layout <layout-code>" >&2
+    exit 1
+fi
+
+# Sanitize input - only allow alphanumeric and hyphens
+if ! [[ "$LAYOUT" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    echo "Error: Invalid layout code '$LAYOUT'" >&2
+    exit 1
+fi
+
+# Check if setxkbmap is available
+if ! command -v setxkbmap &>/dev/null; then
+    echo "Error: setxkbmap not found" >&2
+    exit 1
+fi
+
+# Validate layout exists
+if [ ! -f "/usr/share/X11/xkb/symbols/$LAYOUT" ]; then
+    echo "Error: Layout '$LAYOUT' not found in /usr/share/X11/xkb/symbols/" >&2
+    exit 1
+fi
+
+# Apply the layout
+if output=$(setxkbmap -layout "$LAYOUT" 2>&1); then
+    echo "Switched to: $LAYOUT"
+else
+    echo "Error: Failed to switch layout - $output" >&2
+    exit 1
+fi

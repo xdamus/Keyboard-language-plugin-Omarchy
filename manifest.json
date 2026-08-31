@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "damus.keyboard-switcher",
+  "name": "Keyboard Layout Switcher",
+  "version": "1.0.0",
+  "author": "damus",
+  "description": "Easily switch between keyboard layouts and add new languages",
+  "license": "MIT",
+  "kinds": ["service", "bar-widget"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Keyboard Layout",
+    "description": "Switch keyboard layouts quickly",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "center"
+  }
+}
