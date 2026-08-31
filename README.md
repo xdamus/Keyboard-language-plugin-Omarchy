@@ -83,4 +83,4 @@ omarchy-restart-shell
 
 ## License
 
-MIT
+MIT — see the [LICENSE](LICENSE) file. Copyright (c) 2026 damus.
