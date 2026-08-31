@@ -60,7 +60,6 @@ Item {
 
     KeyboardList {
       service: root.controller
-      contentH: popup.contentHeight
     }
   }
 

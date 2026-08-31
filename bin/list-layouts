@@ -1,62 +1,64 @@
 #!/bin/bash
-# List popular keyboard layouts with human-readable names
+# List popular keyboard layouts with human-readable names.
+#
+# On Wayland/Hyprland setxkbmap does not reflect or set the real typing layout,
+# so the "current" marker is derived from Hyprland via layouts-manager.
 
 set -euo pipefail
 
-# Check if setxkbmap is available
-if ! command -v setxkbmap &>/dev/null; then
-    echo '[]'
-    exit 1
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+CURRENT=""
+if command -v hyprctl >/dev/null 2>&1; then
+  ACTIVE_NAME="$("$SCRIPT_DIR/layouts-manager.sh" get 2>/dev/null || true)"
+  if [ -n "$ACTIVE_NAME" ]; then
+    CURRENT="$("$SCRIPT_DIR/layout-names.sh" findcode "$ACTIVE_NAME" 2>/dev/null || true)"
+  fi
 fi
+CURRENT="${CURRENT:-us}"
 
-# Get current layout
-CURRENT=$(setxkbmap -query 2>/dev/null | grep "^layout:" | awk '{print $2}' || echo "us")
+is_cur() { [ "$CURRENT" = "$1" ] && echo "true" || echo "false"; }
 
-# Popular layouts with friendly names
 cat << EOF
 [
-  {"code": "us", "name": "English (US)", "current": $([ "$CURRENT" = "us" ] && echo "true" || echo "false")},
-  {"code": "gb", "name": "English (UK)", "current": $([ "$CURRENT" = "gb" ] && echo "true" || echo "false")},
-  {"code": "de", "name": "German", "current": $([ "$CURRENT" = "de" ] && echo "true" || echo "false")},
-  {"code": "fr", "name": "French", "current": $([ "$CURRENT" = "fr" ] && echo "true" || echo "false")},
-  {"code": "es", "name": "Spanish", "current": $([ "$CURRENT" = "es" ] && echo "true" || echo "false")},
-  {"code": "it", "name": "Italian", "current": $([ "$CURRENT" = "it" ] && echo "true" || echo "false")},
-  {"code": "pt", "name": "Portuguese", "current": $([ "$CURRENT" = "pt" ] && echo "true" || echo "false")},
-  {"code": "br", "name": "Portuguese (Brazil)", "current": $([ "$CURRENT" = "br" ] && echo "true" || echo "false")},
-  {"code": "nl", "name": "Dutch", "current": $([ "$CURRENT" = "nl" ] && echo "true" || echo "false")},
-  {"code": "be", "name": "Belgian", "current": $([ "$CURRENT" = "be" ] && echo "true" || echo "false")},
-  {"code": "ch", "name": "Swiss", "current": $([ "$CURRENT" = "ch" ] && echo "true" || echo "false")},
-  {"code": "se", "name": "Swedish", "current": $([ "$CURRENT" = "se" ] && echo "true" || echo "false")},
-  {"code": "no", "name": "Norwegian", "current": $([ "$CURRENT" = "no" ] && echo "true" || echo "false")},
-  {"code": "dk", "name": "Danish", "current": $([ "$CURRENT" = "dk" ] && echo "true" || echo "false")},
-  {"code": "fi", "name": "Finnish", "current": $([ "$CURRENT" = "fi" ] && echo "true" || echo "false")},
-  {"code": "ru", "name": "Russian", "current": $([ "$CURRENT" = "ru" ] && echo "true" || echo "false")},
-  {"code": "ua", "name": "Ukrainian", "current": $([ "$CURRENT" = "ua" ] && echo "true" || echo "false")},
-  {"code": "pl", "name": "Polish", "current": $([ "$CURRENT" = "pl" ] && echo "true" || echo "false")},
-  {"code": "cz", "name": "Czech", "current": $([ "$CURRENT" = "cz" ] && echo "true" || echo "false")},
-  {"code": "sk", "name": "Slovak", "current": $([ "$CURRENT" = "sk" ] && echo "true" || echo "false")},
-  {"code": "hu", "name": "Hungarian", "current": $([ "$CURRENT" = "hu" ] && echo "true" || echo "false")},
-  {"code": "ro", "name": "Romanian", "current": $([ "$CURRENT" = "ro" ] && echo "true" || echo "false")},
-  {"code": "bg", "name": "Bulgarian", "current": $([ "$CURRENT" = "bg" ] && echo "true" || echo "false")},
-  {"code": "hr", "name": "Croatian", "current": $([ "$CURRENT" = "hr" ] && echo "true" || echo "false")},
-  {"code": "rs", "name": "Serbian", "current": $([ "$CURRENT" = "rs" ] && echo "true" || echo "false")},
-  {"code": "si", "name": "Slovenian", "current": $([ "$CURRENT" = "si" ] && echo "true" || echo "false")},
-  {"code": "lt", "name": "Lithuanian", "current": $([ "$CURRENT" = "lt" ] && echo "true" || echo "false")},
-  {"code": "lv", "name": "Latvian", "current": $([ "$CURRENT" = "lv" ] && echo "true" || echo "false")},
-  {"code": "ee", "name": "Estonian", "current": $([ "$CURRENT" = "ee" ] && echo "true" || echo "false")},
-  {"code": "jp", "name": "Japanese", "current": $([ "$CURRENT" = "jp" ] && echo "true" || echo "false")},
-  {"code": "kr", "name": "Korean", "current": $([ "$CURRENT" = "kr" ] && echo "true" || echo "false")},
-  {"code": "cn", "name": "Chinese", "current": $([ "$CURRENT" = "cn" ] && echo "true" || echo "false")},
-  {"code": "in", "name": "Indian", "current": $([ "$CURRENT" = "in" ] && echo "true" || echo "false")},
-  {"code": "ar", "name": "Arabic", "current": $([ "$CURRENT" = "ar" ] && echo "true" || echo "false")},
-  {"code": "il", "name": "Hebrew", "current": $([ "$CURRENT" = "il" ] && echo "true" || echo "false")},
-  {"code": "tr", "name": "Turkish", "current": $([ "$CURRENT" = "tr" ] && echo "true" || echo "false")},
-  {"code": "gr", "name": "Greek", "current": $([ "$CURRENT" = "gr" ] && echo "true" || echo "false")},
-  {"code": "latam", "name": "Latin American", "current": $([ "$CURRENT" = "latam" ] && echo "true" || echo "false")},
-  {"code": "ca", "name": "Canadian", "current": $([ "$CURRENT" = "ca" ] && echo "true" || echo "false")},
-  {"code": "at", "name": "Austrian", "current": $([ "$CURRENT" = "at" ] && echo "true" || echo "false")},
-  {"code": "ie", "name": "Irish", "current": $([ "$CURRENT" = "ie" ] && echo "true" || echo "false")},
-  {"code": "nz", "name": "New Zealand", "current": $([ "$CURRENT" = "nz" ] && echo "true" || echo "false")},
-  {"code": "za", "name": "South African", "current": $([ "$CURRENT" = "za" ] && echo "true" || echo "false")}
+  {"code": "us", "name": "English (US)", "current": $(is_cur us)},
+  {"code": "gb", "name": "English (UK)", "current": $(is_cur gb)},
+  {"code": "de", "name": "German", "current": $(is_cur de)},
+  {"code": "fr", "name": "French", "current": $(is_cur fr)},
+  {"code": "es", "name": "Spanish", "current": $(is_cur es)},
+  {"code": "it", "name": "Italian", "current": $(is_cur it)},
+  {"code": "pt", "name": "Portuguese", "current": $(is_cur pt)},
+  {"code": "br", "name": "Portuguese (Brazil)", "current": $(is_cur br)},
+  {"code": "nl", "name": "Dutch", "current": $(is_cur nl)},
+  {"code": "be", "name": "Belgian", "current": $(is_cur be)},
+  {"code": "ch", "name": "Swiss", "current": $(is_cur ch)},
+  {"code": "se", "name": "Swedish", "current": $(is_cur se)},
+  {"code": "no", "name": "Norwegian", "current": $(is_cur no)},
+  {"code": "dk", "name": "Danish", "current": $(is_cur dk)},
+  {"code": "fi", "name": "Finnish", "current": $(is_cur fi)},
+  {"code": "ru", "name": "Russian", "current": $(is_cur ru)},
+  {"code": "ua", "name": "Ukrainian", "current": $(is_cur ua)},
+  {"code": "pl", "name": "Polish", "current": $(is_cur pl)},
+  {"code": "cs", "name": "Czech", "current": $(is_cur cs)},
+  {"code": "sk", "name": "Slovak", "current": $(is_cur sk)},
+  {"code": "hu", "name": "Hungarian", "current": $(is_cur hu)},
+  {"code": "ro", "name": "Romanian", "current": $(is_cur ro)},
+  {"code": "bg", "name": "Bulgarian", "current": $(is_cur bg)},
+  {"code": "hr", "name": "Croatian", "current": $(is_cur hr)},
+  {"code": "sr", "name": "Serbian", "current": $(is_cur sr)},
+  {"code": "sl", "name": "Slovenian", "current": $(is_cur sl)},
+  {"code": "lt", "name": "Lithuanian", "current": $(is_cur lt)},
+  {"code": "lv", "name": "Latvian", "current": $(is_cur lv)},
+  {"code": "et", "name": "Estonian", "current": $(is_cur et)},
+  {"code": "tr", "name": "Turkish", "current": $(is_cur tr)},
+  {"code": "el", "name": "Greek", "current": $(is_cur el)},
+  {"code": "ar", "name": "Arabic", "current": $(is_cur ar)},
+  {"code": "fa", "name": "Persian", "current": $(is_cur fa)},
+  {"code": "ja", "name": "Japanese", "current": $(is_cur ja)},
+  {"code": "ko", "name": "Korean", "current": $(is_cur ko)},
+  {"code": "zh", "name": "Chinese", "current": $(is_cur zh)},
+  {"code": "hi", "name": "Indian", "current": $(is_cur hi)},
+  {"code": "th", "name": "Thai", "current": $(is_cur th)},
+  {"code": "vi", "name": "Vietnamese", "current": $(is_cur vi)}
 ]
 EOF

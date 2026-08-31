@@ -8,15 +8,15 @@ import qs.Ui
 Rectangle {
   id: root
 
+  anchors.fill: parent
+
   property var service: null
   property bool showAddForm: false
-  property real contentH: 340
-  readonly property real addFormH: 168
-  readonly property real listH: Math.max(70, contentH - root.headerH - root.addFormH - 40 - 8)
-
+  readonly property real addFormH: 190
+  readonly property int headerH: 30
+  readonly property real listH: Math.max(70, height - headerH - 34 - (showAddForm ? addFormH : 0) - 12)
   readonly property var layouts: service ? service.layouts : []
   readonly property string current: service ? service.currentLayout : ""
-  readonly property int headerH: 30
 
   color: "transparent"
 

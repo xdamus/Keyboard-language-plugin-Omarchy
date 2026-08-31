@@ -25,7 +25,7 @@ Item {
     }
     if (switchProc.running) return
     root.lastError = ""
-    switchProc.command = [pluginDir + "/bin/switch-layout", layoutCode.trim()]
+    switchProc.command = [pluginDir + "/bin/layouts-manager", "switch", layoutCode.trim()]
     switchProc.running = true
   }
 
@@ -87,6 +87,18 @@ Item {
     var name = root.getLayoutName(code)
     if (!name || !name.length) return "??"
     return name.slice(0, 2).toUpperCase()
+  }
+
+  function codeForName(name) {
+    if (!name) return ""
+    var nm = name.trim().toLowerCase()
+    for (var i = 0; i < root.layouts.length; i++) {
+      var lname = (root.layouts[i].name || "").toLowerCase()
+      if (lname === nm) return root.layouts[i].code
+      // tolerate "English (US)" vs short forms
+      if (lname.indexOf(nm) !== -1 && nm.length >= 3) return root.layouts[i].code
+    }
+    return ""
   }
 
   function isCustom(code) {
@@ -188,27 +200,21 @@ Item {
 
   Process {
     id: queryProc
-    command: ["setxkbmap", "-query"]
+    command: [pluginDir + "/bin/layouts-manager", "get"]
     stdout: StdioCollector {
       onStreamFinished: {
-        var lines = text.split("\n")
-        for (var i = 0; i < lines.length; i++) {
-          var line = lines[i].trim()
-          if (line.indexOf("layout:") === 0) {
-            var layout = line.split(":")[1].trim()
-            if (layout && layout.length >= 2)
-              root.currentLayout = layout
-            break
-          }
-        }
+        // layouts-manager get prints the Hyprland display name, e.g. "German".
+        var name = text.trim()
+        if (!name) return
+        var code = root.codeForName(name)
+        if (code && code.length >= 2)
+          root.currentLayout = code
       }
     }
     stderr: StdioCollector {
       onStreamFinished: {
-        var msg = text.trim()
-        // setxkbmap emits a harmless warning when running under Xwayland.
-        if (msg && msg.indexOf("Xwayland") === -1)
-          console.warn("keyboard-switcher: query error:", msg)
+        if (text.trim())
+          console.warn("keyboard-switcher: query error:", text.trim())
       }
     }
   }
@@ -218,10 +224,12 @@ Item {
     stdout: StdioCollector {
       onStreamFinished: {
         var output = text.trim()
-        if (output.indexOf("Switched to:") === 0)
-          Qt.callLater(root.getCurrentLayout)
-        else if (output)
+        if (output.indexOf("Switched to:") === 0) {
+          root.currentLayout = output.slice("Switched to: ".length).trim()
+          Qt.callLater(root.refreshLayouts)
+        } else if (output) {
           root.lastError = output
+        }
       }
     }
     stderr: StdioCollector {
