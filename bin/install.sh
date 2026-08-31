@@ -1,6 +1,6 @@
 #!/bin/bash
 # Install Keyboard Layout Switcher plugin for Omarchy
-# Usage: bash -c "$(curl -fsSL https://raw.githubusercontent.com/xdamus/Keyboard-language-plugin-Omarchy/main/install.sh)"
+# Usage: bash -c "$(curl -fsSL https://raw.githubusercontent.com/xdamus/Keyboard-language-plugin-Omarchy/master/install.sh)"
 
 set -euo pipefail
 
@@ -50,12 +50,10 @@ echo -e "${GREEN}Plugin installed to $PLUGIN_DIR${NC}"
 echo -e "${YELLOW}Reloading shell...${NC}"
 
 # Try to reload the shell
-if command -v omarchy-shell-reload &>/dev/null; then
-    omarchy-shell-reload
-elif systemctl --user list-units | grep -q "omarchy-shell"; then
-    systemctl --user restart omarchy-shell
+if command -v omarchy-restart-shell &>/dev/null; then
+    omarchy-restart-shell
 else
-    echo -e "${YELLOW}Could not auto-reload shell. Please restart omarchy-shell manually.${NC}"
+    echo -e "${YELLOW}Could not auto-reload shell. Run omarchy-restart-shell manually.${NC}"
 fi
 
 echo -e "${GREEN}✓ Installation complete!${NC}"

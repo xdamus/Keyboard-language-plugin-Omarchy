@@ -10,26 +10,27 @@ Item {
 
   property string currentLayout: "us"
   property var layouts: []
+  property var customLayouts: []
   property string lastError: ""
+  property string addStatus: ""
 
   readonly property string pluginDir: manifest && manifest.__sourceDir
     ? String(manifest.__sourceDir)
     : (Quickshell.env("HOME") + "/.config/omarchy/plugins/damus.keyboard-switcher")
 
   function switchLayout(layoutCode) {
-    if (!layoutCode || layoutCode.length < 2 || layoutCode.length > 10) {
+    if (!layoutCode || layoutCode.trim().length < 2 || layoutCode.trim().length > 10) {
       root.lastError = "Invalid layout code"
       return
     }
     if (switchProc.running) return
     root.lastError = ""
-    switchProc.command = [pluginDir + "/bin/switch-layout", layoutCode]
+    switchProc.command = [pluginDir + "/bin/switch-layout", layoutCode.trim()]
     switchProc.running = true
   }
 
   function refreshLayouts() {
-    if (listProc.running) return
-    listProc.running = true
+    root.loadCustomLayouts()
   }
 
   function getCurrentLayout() {
@@ -40,6 +41,37 @@ Item {
   function onDropdownOpen() {
     root.refreshLayouts()
     root.getCurrentLayout()
+  }
+
+  function loadCustomLayouts() {
+    if (customProc.running) return
+    customProc.running = true
+  }
+
+  function rebuild() {
+    if (listProc.running) return
+    listProc.running = true
+  }
+
+  function addCustomLayout(code, name) {
+    if (!code || code.trim().length < 2 || code.trim().length > 10) {
+      root.addStatus = "Invalid code (2-10 chars)"
+      return false
+    }
+    if (!/^[A-Za-z0-9_-]+$/.test(code.trim())) {
+      root.addStatus = "Code may only contain letters, numbers, - and _"
+      return false
+    }
+    root.addStatus = ""
+    addProc.command = [pluginDir + "/bin/custom-layouts", "add", code.trim(), (name || code).trim()]
+    addProc.running = true
+    return true
+  }
+
+  function removeCustomLayout(code) {
+    if (!code) return
+    removeProc.command = [pluginDir + "/bin/custom-layouts", "remove", code.trim()]
+    removeProc.running = true
   }
 
   function getLayoutName(code) {
@@ -57,6 +89,36 @@ Item {
     return name.slice(0, 2).toUpperCase()
   }
 
+  function isCustom(code) {
+    if (!root.customLayouts || !code) return false
+    for (var i = 0; i < root.customLayouts.length; i++) {
+      if (root.customLayouts[i].code === code)
+        return true
+    }
+    return false
+  }
+
+  function mergeLayouts(base) {
+    var customs = root.customLayouts || []
+    var seen = {}
+    var merged = []
+    for (var i = 0; i < base.length; i++) {
+      var b = base[i]
+      if (!b || !b.code) continue
+      seen[b.code] = true
+      merged.push(b)
+    }
+    // Append custom layouts that aren't already in the built-in list.
+    for (var j = 0; j < customs.length; j++) {
+      var c = customs[j]
+      if (!c || !c.code) continue
+      if (seen[c.code]) continue
+      seen[c.code] = true
+      merged.push({ code: c.code, name: c.name || c.code, current: false, custom: true })
+    }
+    return merged
+  }
+
   Process {
     id: listProc
     command: [pluginDir + "/bin/list-layouts"]
@@ -65,9 +127,9 @@ Item {
         var trimmed = text.trim()
         if (!trimmed) return
         try {
-          var parsed = JSON.parse(trimmed)
-          if (Array.isArray(parsed) && parsed.length > 0)
-            root.layouts = parsed
+          var base = JSON.parse(trimmed)
+          if (Array.isArray(base))
+            root.layouts = root.mergeLayouts(base)
         } catch(e) {
           console.warn("keyboard-switcher: failed to parse layouts:", e)
         }
@@ -77,6 +139,49 @@ Item {
       onStreamFinished: {
         if (text.trim())
           console.warn("keyboard-switcher: list-layouts error:", text.trim())
+      }
+    }
+  }
+
+  Process {
+    id: customProc
+    command: [pluginDir + "/bin/custom-layouts", "list"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        try {
+          var data = JSON.parse(text)
+          root.customLayouts = Array.isArray(data.custom) ? data.custom : []
+        } catch(e) {
+          console.warn("keyboard-switcher: failed to parse custom layouts:", e)
+        }
+        rebuild()
+      }
+    }
+  }
+
+  Process {
+    id: addProc
+    stdout: StdioCollector {
+      onStreamFinished: {
+        var out = text.trim()
+        root.addStatus = out ? out : "Added"
+        root.loadCustomLayouts()
+        root.onDropdownOpen()
+      }
+    }
+    stderr: StdioCollector {
+      onStreamFinished: {
+        root.addStatus = text.trim() || "Failed to add"
+      }
+    }
+  }
+
+  Process {
+    id: removeProc
+    stdout: StdioCollector {
+      onStreamFinished: {
+        root.loadCustomLayouts()
+        root.onDropdownOpen()
       }
     }
   }
@@ -100,8 +205,10 @@ Item {
     }
     stderr: StdioCollector {
       onStreamFinished: {
-        if (text.trim())
-          console.warn("keyboard-switcher: query error:", text.trim())
+        var msg = text.trim()
+        // setxkbmap emits a harmless warning when running under Xwayland.
+        if (msg && msg.indexOf("Xwayland") === -1)
+          console.warn("keyboard-switcher: query error:", msg)
       }
     }
   }

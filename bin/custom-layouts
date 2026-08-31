@@ -1,0 +1,79 @@
+#!/bin/bash
+# Manage custom keyboard layouts added by the user.
+# Usage:
+#   custom-layouts list          — print custom layouts as JSON
+#   custom-layouts add  CODE  NAME — add a custom layout
+#   custom-layouts remove CODE    — remove a custom layout
+
+set -euo pipefail
+
+CONFIG_DIR="$HOME/.config/omarchy"
+CONFIG_FILE="$CONFIG_DIR/keyboard-layouts.conf.json"
+
+ensure_config() {
+    mkdir -p "$CONFIG_DIR"
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo '{"custom": []}' > "$CONFIG_FILE"
+    fi
+}
+
+case "${1:-}" in
+    list)
+        ensure_config
+        cat "$CONFIG_FILE"
+        ;;
+    add)
+        CODE="${2:-}"
+        NAME="${3:-}"
+        if [ -z "$CODE" ]; then
+            echo "Error: missing layout code" >&2
+            exit 1
+        fi
+        # Validate code: alphanumeric + dash/underscore
+        if ! [[ "$CODE" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            echo "Error: invalid layout code '$CODE'" >&2
+            exit 1
+        fi
+        ensure_config
+        python3 - "$CONFIG_FILE" "$CODE" "$NAME" <<'PYEOF'
+import json, sys
+path, code, name = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(path) as f:
+    data = json.load(f)
+custom = data.get("custom", [])
+# Replace existing entry with same code
+for entry in custom:
+    if entry.get("code") == code:
+        entry["name"] = name or code
+        break
+else:
+    custom.append({"code": code, "name": name or code})
+data["custom"] = custom
+with open(path, "w") as f:
+    json.dump(data, f, indent=2)
+print("added")
+PYEOF
+        ;;
+    remove)
+        CODE="${2:-}"
+        if [ -z "$CODE" ]; then
+            echo "Error: missing layout code" >&2
+            exit 1
+        fi
+        ensure_config
+        python3 - "$CONFIG_FILE" "$CODE" <<'PYEOF'
+import json, sys
+path, code = sys.argv[1], sys.argv[2]
+with open(path) as f:
+    data = json.load(f)
+data["custom"] = [e for e in data.get("custom", []) if e.get("code") != code]
+with open(path, "w") as f:
+    json.dump(data, f, indent=2)
+print("removed")
+PYEOF
+        ;;
+    *)
+        echo "Usage: $(basename "$0") {list|add CODE NAME|remove CODE}" >&2
+        exit 1
+        ;;
+esac
