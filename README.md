@@ -15,7 +15,40 @@ English (US/UK), German, French, Spanish, Italian, Portuguese, Dutch, Belgian, S
 
 ## Installation
 
-Copy this plugin to `~/.config/omarchy/plugins/damus.keyboard-switcher/`
+### Command-line install (recommended)
+
+```bash
+omarchy plugin add https://github.com/xdamus/Keyboard-language-plugin-Omarchy.git --enable
+```
+
+Then reload the shell:
+
+```bash
+omarchy-shell-reload
+```
+
+### One-line install script
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/xdamus/Keyboard-language-plugin-Omarchy/main/install.sh)"
+```
+
+### Manual install
+
+Copy this plugin to `~/.config/omarchy/plugins/damus.keyboard-switcher/`:
+
+```bash
+git clone https://github.com/xdamus/Keyboard-language-plugin-Omarchy.git ~/.config/omarchy/plugins/damus.keyboard-switcher
+chmod +x ~/.config/omarchy/plugins/damus.keyboard-switcher/bin/*
+omarchy-shell-reload
+```
+
+## Uninstall
+
+```bash
+omarchy plugin remove damus.keyboard-switcher
+omarchy-shell-reload
+```
 
 ## Adding Custom Layouts
 
