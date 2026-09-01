@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 CURRENT=""
 if command -v hyprctl >/dev/null 2>&1; then
-  ACTIVE_NAME="$("$SCRIPT_DIR/layouts-manager.sh" get 2>/dev/null || true)"
+  ACTIVE_NAME="$("$SCRIPT_DIR/layouts-manager" get 2>/dev/null || true)"
   if [ -n "$ACTIVE_NAME" ]; then
     CURRENT="$("$SCRIPT_DIR/layout-names.sh" findcode "$ACTIVE_NAME" 2>/dev/null || true)"
   fi
