@@ -84,7 +84,7 @@ find_index() {
 
 set_active_list() {
   local list
-  list="$(echo "$1" | tr -d '[:space:]' | sed 's/,*//; s/,*$//')"
+  list="$(echo "$1" | tr -d '[:space:]' | sed 's/^,*//; s/,*$//')"
   [ -n "$list" ] || die "empty layout list"
   # Validate each code exists in xkb symbols
   local code
@@ -136,11 +136,9 @@ switch_layout() {
   fi
 
   list="$(read_active)"
-  shift 2>/dev/null || true
   cur="$(current_code)"
 
-  if find_index "$code" >/dev/null; then
-    idx="$(find_index "$code")"
+  if idx="$(find_index "$code")"; then
     kb="$(type_keyboard)"
     [ -n "$kb" ] || die "no typed keyboard found"
     hyprctl switchxkblayout "$kb" "$idx" >/dev/null 2>&1 || die "switchxkblayout failed"
